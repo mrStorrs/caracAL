@@ -1,7 +1,7 @@
 var inside = "login";
 var user_id = "",
   user_auth = "";
-var base_url = "https://adventure.land";
+var base_url = "https://localhost";
 var server_addr = "",
   server_port = "";
 var server_names = { US: "Americas", EU: "Europas", ASIA: "Eastlands" };

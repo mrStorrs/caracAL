@@ -1,4 +1,4 @@
-const base_url = "https://adventure.land";
+const base_url = "http://localhost";
 const fs = require("fs").promises;
 const { createWriteStream } = require("fs");
 const { pipeline } = require("stream");
