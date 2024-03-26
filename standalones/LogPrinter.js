@@ -23,6 +23,7 @@ const supported_msg_colors = {
   yellow: colorette.yellow,
   green: colorette.green,
   blue: colorette.blue,
+  gold: colorette.yellow //gold is not a color so lets make it yellow :D 
 }; //no black or white, these are assumed to be console-theme-preference
 
 const messageFormat = (log_object, messageKey) => {
