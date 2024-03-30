@@ -1,26 +1,55 @@
+import { CodeMessageEvent } from "../node_modules/typed-adventureland/dist/src/codemessage";
 import {Fighter} from "./Fighter"
+import {Target} from "./Target"
 
-let test: Fighter = new Fighter("goo");
+const TARGETS: string[] = ["goo"]
+let bot: Fighter = new Fighter("goo");
+let target: Target = new Target(TARGETS);
 
-fight_loop()
+// test.test_loop()
+bot.fight_loop()
+bot.combat_loop()
 respawn_loop()
-
-async function fight_loop() {
-    try {
-        test.fight_loop()
-    } catch (e) {
-        // game_log("error=lootLoop")
-        // console.error(e)
-    }
-    setTimeout(fight_loop, 100);
-}
 
 async function respawn_loop() {
     try {
-        test.try_respawn()
+        bot.try_respawn()
     } catch (e) {
         // game_log("error=fight_loop")
         // console.error(e)
     }
-    setTimeout(respawn_loop, 10000);
+    setTimeout(respawn_loop, 1000);
 }
+
+sleep(1000)
+
+character.on("cm", function(data: CodeMessageEvent<any>){
+    if(data.message == "party_invite") accept_party_invite(data.name);
+
+    //todo: these should be enums
+    if(data.message.action == "update_target"){
+        bot.party_targets.set(data.name, data.message.message); 
+    }
+});
+
+
+if(character.name == "dadio")send_party_requests();
+async function send_party_requests() {
+    try {
+        if (parent.party_list.length < 3 ) {
+            let characters = parent.X.characters; 
+            for(let c of characters){
+                if (c.online > 0 && c.type != "merchant" && !parent.party_list.includes(c.name) && c.name != character.name) {
+                    game_log(c.name);
+                    await send_party_invite(c.name, false);
+                    send_cm(c.name, "party_invite")
+                }   
+            }
+        }
+
+    } catch (e) {
+        game_log("error=slowLoopParty " + e)
+    }
+    setTimeout(send_party_requests, 1000);
+}
+

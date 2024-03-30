@@ -239,15 +239,40 @@ async function make_game(proc_args) {
     return (extensions.runner && extensions.runner[f_name]) || function () {};
   };
   //call_code_function("trigger_character_event","cm",{name:data.name,message:JSON.parse(data.message)});
-
+          // caracAL.log.info({col:col, type:"game_logs"}, msg.split(" ")[0] + ":" + msg.split(" ")[1]);
+  //fix gold count. we should instead handle this in game by just saving off the goldcount.
   vm.runInContext(
     `
   (function() {
     const old_add_log = add_log; 
     add_log = function(msg, col) {
       old_add_log(msg,col);
+      if(character != null && character.lastPost == undefined) character.lastPost = new Date() / 1000; 
+      if(character != null && character.killCount == undefined) character.killCount = 0;  
+      if(character != null && character.goldCount == undefined) character.goldCount = 0;  
+      recentDate = new Date() / 1000;
+      if (character != null && recentDate - character.lastPost > 60) {
+          caracAL.log.info({col:"gold", type:"game_logs"}, "goldCount=" + character.goldCount);
+          caracAL.log.info({col:"red", type:"game_logs"}, "killCount=" + character.killCount);
+          character.lastPost = new Date() / 1000;
+          character.goldCount = 0; 
+          character.killCount = 0;
+      }
       for(let [msg, col] of game_logs) {
-        caracAL.log.info({col:col, type:"game_logs"}, msg);
+        if(character != null) {
+          if(msg.split(" ")[1] == "killed"){
+            if(msg.split(" ")[0] == character.name){
+              character.killCount++; 
+            }
+          } else if (msg.split(" ")[1] == "gold"){
+            character.goldCount += parseInt(msg.split(" ")[0]);
+          } else if(!msg.includes("Received a code message")){
+            caracAL.log.info({col:col, type:"game_logs"}, msg);
+          }
+        } else {
+          caracAL.log.info({col:col, type:"game_logs"}, msg);
+        }
+          
       }
       game_logs = [];
     }
