@@ -8,21 +8,19 @@ import { Util } from "./Util";
 import { CmAction } from "./enums/CmAction";
 
 export class Fighter {
-  private mon_type!: string;
-  private is_attacking: boolean = false; 
-  private current_target: MonsterEntity | null = null; 
+  private target_monsters: string[];
   public timeouts = new Map<string, ReturnType<typeof setTimeout>>();
   public party_targets: Map<string, string> = new Map<string, string>();
-  private targetFinder = new Target(["goo"]); 
-  private target = null; 
+  private targetFinder: Target; 
   private current_time: number = new Date().getTime() / 1000; 
   private last_collection: number = new Date().getTime() / 1000; 
   private MERCHANT = this.get_merchant()
   private last_sent_items = new Date().getTime() / 1000; 
   private ITEMS_TO_KEEP: string[] = ["mpot0", "hpot0"]
 
-  constructor(mon_type: string){
-    this.mon_type = mon_type;
+  constructor(target_monsters: string[]){
+    this.target_monsters = target_monsters;
+    this.targetFinder = new Target(target_monsters);
   }
 
   public smart_potion_logic() {
@@ -66,12 +64,6 @@ export class Fighter {
     } else {
       //prefer hp
       choose_potion(["hpot0", "mpot0", "hpot0", "mpot0"]);
-    }
-  }
-
-  public try_respawn() {
-    if (character.rip) {
-      respawn();
     }
   }
 
@@ -128,8 +120,6 @@ export class Fighter {
   public async fight_loop(){
     if (character.rip ) {
       await respawn(); 
-      // this.timeouts.set("fight_loop", setTimeout(() => this.fight_loop(), 1000));
-      // return;
     }
 
     this.request_supplies(); 
@@ -141,12 +131,12 @@ export class Fighter {
     // if(!target){
     let target = this.targetFinder.get_target(this.party_targets)
 
-
     if (target) {
-      if(target.id != character.target && !Array.from(this.party_targets.values()).includes(target.id)){
+      if(target.id != character.target){
         Fighter.update_party_target(target.id)
         change_target(target);
       }
+
 
       const dist = simple_distance(target, character);
       if (!is_moving(character) && dist > character.range - 10) {
@@ -159,8 +149,8 @@ export class Fighter {
           smart_move(target);
         }
       }
-    } else if (!is_moving(character)) {
-      smart_move(this.mon_type);
+    } else if (!is_moving(character) && !smart.searching) {
+      await smart_move(this.target_monsters[0]);
     } 
     this.timeouts.set("fight_loop", setTimeout(() => this.fight_loop(), 100))
   }
@@ -169,7 +159,7 @@ export class Fighter {
   public async combat_loop(){
     
     try {
-      if (character.target != null && can_attack(parent.entities[character.target]) && !Array.from(this.party_targets.values()).includes(character.target)) {
+      if (character.target != null && can_attack(parent.entities[character.target])) {
         await attack(parent.entities[character.target])
       } else if (character.target != null && Array.from(this.party_targets.values()).includes(character.target)) {
         this.targetFinder.get_target(this.party_targets)

@@ -1,7 +1,11 @@
-import { MonsterEntity } from "../node_modules/typed-adventureland/dist/src/entity";
+import { CharacterEntity, Entity, MonsterEntity } from "../node_modules/typed-adventureland/dist/src/entity";
+import { Logger } from "./Logger";
 
 export class Target {
     private targets: string[];
+    //move this to a constructor
+    private TANK: string = "keos";
+    private TANK_ENTITY!: CharacterEntity | null; 
 
     constructor(targets: string[]) {
         this.targets = targets;
@@ -19,8 +23,11 @@ export class Target {
                 if(entity.mtype == target){
                     potential_targets.push(entity)
                 }
-            }
+                if(entity.name == this.TANK){
+                    this.TANK_ENTITY = <CharacterEntity>entity;
+                }
 
+            }
             potential_targets.sort(function (current, next) {
 
                 if (Array.from(party_targets.values()).includes(current.id)) {
@@ -44,7 +51,15 @@ export class Target {
                 // return found_target;
             // }
             let finalTarget: MonsterEntity = <MonsterEntity>potential_targets[0]
-            if (target) return finalTarget;
+            // if(finalTarget && finalTarget.hp > 500 && character.name != this.TANK){
+            //     if(parent.party_list.includes(this.TANK)){
+            //         if(this.TANK_ENTITY != null && this.TANK_ENTITY.target){
+            //             Logger.info("Ganging up")
+            //             return parent.entities[this.TANK_ENTITY.target]
+            //         } else return null; 
+            //     }
+            // }
+            if (finalTarget) return finalTarget;
         }
         return null; 
     }

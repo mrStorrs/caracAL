@@ -3,29 +3,28 @@ import {Fighter} from "./Fighter"
 import { Merchant } from "./Merchant";
 import {Target} from "./Target"
 
-const TARGETS: string[] = ["goo"]
-let bot: Fighter = new Fighter("goo");
+const TARGETS: string[] = ["crab"]
+let bot: Fighter = new Fighter(TARGETS);
 let bot_merchant: Merchant = new Merchant(); 
-let target: Target = new Target(TARGETS);
 
 // test.test_loop()
 if(character.ctype != "merchant"){
     bot.fight_loop()
     bot.combat_loop()
-    respawn_loop()
+    // respawn_loop()
 } else {
     bot_merchant.merchant_loop();
 }
 
-async function respawn_loop() {
-    try {
-        bot.try_respawn()
-    } catch (e) {
-        // game_log("error=fight_loop")
-        // console.error(e)
-    }
-    setTimeout(respawn_loop, 1000);
-}
+// async function respawn_loop() {
+//     try {
+//         bot.try_respawn()
+//     } catch (e) {
+//         // game_log("error=fight_loop")
+//         // console.error(e)
+//     }
+//     setTimeout(respawn_loop, 1000);
+// }
 
 sleep(1000)
 

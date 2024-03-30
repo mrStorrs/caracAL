@@ -1,4 +1,5 @@
 export enum MerchantStatus {
-    Bored = "bored",
-    Collecting = "collecting"
+    BORED = "bored",
+    COLLECTING = "collecting",
+    UPGRADING = "upgrading"
 }

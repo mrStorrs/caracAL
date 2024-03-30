@@ -1,18 +1,20 @@
 import { CodeMessageEvent } from "../node_modules/typed-adventureland/dist/src/codemessage";
 import { XOnlineCharacter } from "../node_modules/typed-adventureland/dist/src/parent/index";
 import { Logger } from "./Logger";
+import { Upgrade } from "./Upgrade";
 import { Util } from "./Util";
 import { CmAction } from "./enums/CmAction";
 import { MerchantStatus } from "./enums/MerchantStatus";
+import { MERCHANT_INFO } from "./lib/GlobalLib";
 
 
 // character.on("cm", function (m) {
 //     if (fighters.includes(data.name)) {
 //         //send back the amount of gold currently held
 //         if (data.message.action == "sendLocation") {
-//             if (merchant.status != "collecting" && merchant.status != "compounding" && character.esize > 4) {
+//             if (merchant.MERCHANT_INFO.status!= "collecting" && merchant.MERCHANT_INFO.status!= "compounding" && character.esize > 4) {
 //                 set_message("collecting");
-//                 merchant.status = "collecting"
+//                 merchant.MERCHANT_INFO.status= "collecting"
 //                 // set_merchant(merchant);
 //                 game_log("error msg here");
 //                 smart_move({ map: data.message.map, x: data.message.x, y: data.message.y });
@@ -23,7 +25,7 @@ import { MerchantStatus } from "./enums/MerchantStatus";
 //     }
 // })
 
-let status: string = MerchantStatus.Bored
+
 let last_collection: number = new Date().getTime() / 1000; 
 let last_message: CodeMessageEvent<any>; 
 
@@ -33,13 +35,14 @@ export class Merchant {
     private FIGHTERS = this.get_fighters()
     private mpot = G.items.mpot0;
     private hpot = G.items.hpot0;
+    
 
     constructor(){
         character.on("cm", function (data: CodeMessageEvent<any>) {
             if (data.message.action == CmAction.REQUEST_SUPPLIES) {
-                if (status != MerchantStatus.Collecting && character.esize > 4) {
-                    set_message(MerchantStatus.Collecting);
-                    status = MerchantStatus.Collecting
+                if (MERCHANT_INFO.status != MerchantStatus.COLLECTING && character.esize > 4) {
+                    set_message(MerchantStatus.COLLECTING);
+                    MERCHANT_INFO.status = MerchantStatus.COLLECTING
                     last_message = data
                     // smart_move({ map: data.message.map, x: data.message.x, y: data.message.y });
                     // last_collection = new Date().getTime() / 1000; //reset last collection time.
@@ -60,18 +63,18 @@ export class Merchant {
     public async merchant_loop(){
         let current_time: number = new Date().getTime() / 1000; //convert to seconds
 
-        if (status == MerchantStatus.Collecting ){
+        if (MERCHANT_INFO.status== MerchantStatus.COLLECTING ){
             try{
                 await smart_move({ map: last_message.message.map, x: last_message.message.x, y: last_message.message.y });
                 last_collection = new Date().getTime() / 1000; //reset last collection time.
-                status = MerchantStatus.Bored
+                MERCHANT_INFO.status= MerchantStatus.BORED
                 Logger.info("Merchant has arrived at destination")
             } catch (e) {
                 Logger.error("error in merchant loop e:" + e)
             }
         }
 
-        if (status == MerchantStatus.Bored && !this.at_bored_spot()){
+        if (MERCHANT_INFO.status== MerchantStatus.BORED && !this.at_bored_spot()){
             await smart_move(this.BORED_SPOT)
         }
 
@@ -96,6 +99,29 @@ export class Merchant {
             } catch (e) {
                 Logger.error("Error purchasing potions e:")
             }
+
+        }
+
+        if (!smart.moving && !smart.searching) {
+            // if (merchant.status == "banking") {
+            //     checked_bank = go_check_bank(); // run check banking  
+            // }
+            // if (character.q.compound == undefined && merchant.status != "upgrading" && merchant.status != "banking") {
+            //     go_compound();
+            // }
+            if (character.q.upgrade == undefined && MERCHANT_INFO.status == MerchantStatus.BORED) {
+                Upgrade.go_upgrade();
+            }
+
+            // if (merchant.status == "Bored!") {
+            //     if (!checked_bank) {
+            //         go_check_bank();
+            //     } else if (character.x != -107 && character.y != -50) {
+            //         smart_move({ map: "main", x: -107, y: -50 })
+            //     } else {
+            //         sellJunk();
+            //     }
+            // }
 
         }
 
