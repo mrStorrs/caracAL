@@ -14,6 +14,7 @@ if(character.ctype != "merchant"){
     // respawn_loop()
 } else {
     bot_merchant.merchant_loop();
+    bot_merchant.sell_loop();
 }
 
 // async function respawn_loop() {
