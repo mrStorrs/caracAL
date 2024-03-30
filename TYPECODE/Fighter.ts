@@ -1,7 +1,11 @@
 // import * as functions from "./localhost/793/functions.js"
 
 import { MonsterEntity } from "../node_modules/typed-adventureland/dist/src/entity";
-import {Target} from "./Target"
+import { XOnlineCharacter } from "../node_modules/typed-adventureland/dist/src/parent/index";
+import { Logger } from "./Logger";
+import { Target } from "./Target"
+import { Util } from "./Util";
+import { CmAction } from "./enums/CmAction";
 
 export class Fighter {
   private mon_type!: string;
@@ -11,6 +15,11 @@ export class Fighter {
   public party_targets: Map<string, string> = new Map<string, string>();
   private targetFinder = new Target(["goo"]); 
   private target = null; 
+  private current_time: number = new Date().getTime() / 1000; 
+  private last_collection: number = new Date().getTime() / 1000; 
+  private MERCHANT = this.get_merchant()
+  private last_sent_items = new Date().getTime() / 1000; 
+  private ITEMS_TO_KEEP: string[] = ["mpot0", "hpot0"]
 
   constructor(mon_type: string){
     this.mon_type = mon_type;
@@ -47,16 +56,16 @@ export class Fighter {
     );
     if (mp_critical) {
       //force restore mp
-      choose_potion(["mpot1", "mpot0"], "regen_mp");
+      choose_potion(["mpot0", "mpot0"], "regen_mp");
     } else if (hp_critical) {
       //force restore hp
-      choose_potion(["hpot1", "hpot0"], "regen_hp");
+      choose_potion(["hpot0", "hpot0"], "regen_hp");
     } else if (priest_present) {
       //heavily prefer mp
-      choose_potion(["mpot1", "mpot0", "hpot1", "hpot0"]);
+      choose_potion(["mpot0", "mpot0", "hpot0", "hpot0"]);
     } else {
       //prefer hp
-      choose_potion(["hpot1", "mpot1", "hpot0", "mpot0"]);
+      choose_potion(["hpot0", "mpot0", "hpot0", "mpot0"]);
     }
   }
 
@@ -66,17 +75,66 @@ export class Fighter {
     }
   }
 
-  public async test_loop(){
-    console.log("testing")
-    this.timeouts.set("test_loop", setTimeout(() => this.test_loop(), 100))
-  }
-  
-  public async fight_loop(){
-    if (character.rip) {
+  //todo: move to targeting
+  private send_items_to_merchant(){
+    if (!this.MERCHANT) {
+      this.MERCHANT = this.get_merchant()
       return;
     }
 
+    let entities = Object.values(parent.entities);
+    this.current_time = new Date().getTime() / 1000; 
+
+    for(let entity of entities){
+      if (entity.name == this.MERCHANT.name && distance(character, entity) < 350){
+        Logger.info("you are here sir")
+        game_log(this.last_sent_items)
+        game_log(this.current_time)
+
+        if(this.current_time - this.last_sent_items > 3){
+          this.send_to_merchant(1, this.MERCHANT.name)
+          let mp_to_request = Math.min(3000, 9999 - Util.get_num_items("mpot0"))
+          let hp_to_request = Math.min(3000, 9999 - Util.get_num_items("hpot0"))
+          if(mp_to_request > 100) this.request_from_merchant("mpot0", mp_to_request, this.MERCHANT.name)
+          if(hp_to_request > 100) this.request_from_merchant("hpot0", mp_to_request, this.MERCHANT.name)
+        }
+      }
+    }
+    this.last_sent_items = new Date().getTime() / 1000
+  }
+
+  //todo: move to targeting or util 
+  private send_to_merchant(index: number, merchant_name: string) {
+    if(character.gold > 10000) send_gold(merchant_name, character.gold);
+    for (let i = index; i <= character.isize; i++) {
+      if (character.items[i] != null && !this.ITEMS_TO_KEEP.includes(character.items[i].name)) { //make sure slot is not empty.
+        send_item(merchant_name, i, 999);
+      }
+    }
+  }
+
+  //todo: move to targeting or util 
+  private request_from_merchant(item: string, itemAmount: number, merchant_name: string) {
+    let data = {
+      "action": CmAction.REQUEST_ITEM,
+      "item": item,
+      "itemAmount": itemAmount
+    }
+    Logger.info("Sending request for items: " + data)
+    send_cm(merchant_name, data);
+  }
+
+  
+  public async fight_loop(){
+    if (character.rip ) {
+      await respawn(); 
+      // this.timeouts.set("fight_loop", setTimeout(() => this.fight_loop(), 1000));
+      // return;
+    }
+
+    this.request_supplies(); 
     this.smart_potion_logic();
+    this.send_items_to_merchant(); 
     loot();
 
     // const target = get_nearest_monster({ type: this.mon_type });
@@ -90,10 +148,6 @@ export class Fighter {
         change_target(target);
       }
 
-
-      // console.log(can_attack(target))
-      // console.log(this.is_attacking)
-      // console.log("pow77")
       const dist = simple_distance(target, character);
       if (!is_moving(character) && dist > character.range - 10) {
         if (can_move_to(target.real_x, target.real_y)) {
@@ -154,6 +208,37 @@ export class Fighter {
         }
       }
     }
+  }
+
+  private  request_supplies(){
+    if(!this.MERCHANT){
+      this.MERCHANT = this.get_merchant()
+      return;
+    }
+    this.current_time = new Date().getTime() / 1000;
+    if (this.current_time - this.last_collection > 10 
+      && (character.isize - character.esize > 15 || !Util.are_potions_stocked())) {
+      let locationResponse = {
+        action: CmAction.REQUEST_SUPPLIES,
+        map: character.map,
+        x: character.x,
+        y: character.y
+      }
+      send_cm(this.MERCHANT.name, locationResponse);
+      Logger.info("requesting supplies");
+      this.last_collection = new Date().getTime() / 1000;
+    }
+  }
+
+  private get_merchant(){
+    let characters = parent.X.characters;
+    let merchant!: XOnlineCharacter;
+    for (let character of characters) {
+      if (character.online > 0 && character.type == "merchant") {
+        merchant = character
+      }
+    }
+    return merchant; 
   }
 
 }

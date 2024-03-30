@@ -1,15 +1,21 @@
 import { CodeMessageEvent } from "../node_modules/typed-adventureland/dist/src/codemessage";
 import {Fighter} from "./Fighter"
+import { Merchant } from "./Merchant";
 import {Target} from "./Target"
 
 const TARGETS: string[] = ["goo"]
 let bot: Fighter = new Fighter("goo");
+let bot_merchant: Merchant = new Merchant(); 
 let target: Target = new Target(TARGETS);
 
 // test.test_loop()
-bot.fight_loop()
-bot.combat_loop()
-respawn_loop()
+if(character.ctype != "merchant"){
+    bot.fight_loop()
+    bot.combat_loop()
+    respawn_loop()
+} else {
+    bot_merchant.merchant_loop();
+}
 
 async function respawn_loop() {
     try {
@@ -23,14 +29,16 @@ async function respawn_loop() {
 
 sleep(1000)
 
-character.on("cm", function(data: CodeMessageEvent<any>){
-    if(data.message == "party_invite") accept_party_invite(data.name);
+if (character.ctype != "merchant"){
+    character.on("cm", function (data: CodeMessageEvent<any>) {
+        if (data.message == "party_invite") accept_party_invite(data.name);
 
-    //todo: these should be enums
-    if(data.message.action == "update_target"){
-        bot.party_targets.set(data.name, data.message.message); 
-    }
-});
+        //todo: these should be enums
+        if (data.message.action == "update_target") {
+            bot.party_targets.set(data.name, data.message.message);
+        }
+    });
+}
 
 
 if(character.name == "dadio")send_party_requests();
@@ -39,7 +47,7 @@ async function send_party_requests() {
         if (parent.party_list.length < 3 ) {
             let characters = parent.X.characters; 
             for(let c of characters){
-                if (c.online > 0 && c.type != "merchant" && !parent.party_list.includes(c.name) && c.name != character.name) {
+                if (c.online > 0 && c.type!= "merchant" && !parent.party_list.includes(c.name) && c.name != character.name) {
                     game_log(c.name);
                     await send_party_invite(c.name, false);
                     send_cm(c.name, "party_invite")
