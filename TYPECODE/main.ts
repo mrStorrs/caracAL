@@ -1,11 +1,14 @@
 import { CodeMessageEvent } from "../node_modules/typed-adventureland/dist/src/codemessage";
 import {Fighter} from "./Fighter"
+import { Logger } from "./Logger";
 import { Merchant } from "./Merchant";
 import {Target} from "./Target"
+import { CmAction } from "./enums/CmAction";
 
-const TARGETS: string[] = ["crab"]
+const TARGETS: string[] = ["bee"]
 let bot: Fighter = new Fighter(TARGETS);
 let bot_merchant: Merchant = new Merchant(); 
+let merchant_name: string = "krissypooh";
 
 // test.test_loop()
 if(character.ctype != "merchant"){
@@ -15,6 +18,7 @@ if(character.ctype != "merchant"){
 } else {
     bot_merchant.merchant_loop();
     bot_merchant.sell_loop();
+    bot_merchant.stand_loop();
 }
 
 // async function respawn_loop() {
@@ -36,6 +40,18 @@ if (character.ctype != "merchant"){
         //todo: these should be enums
         if (data.message.action == "update_target") {
             bot.party_targets.set(data.name, data.message.message);
+        }
+
+        //todo: there needs to be a better way to do this. mayeb using globals for each fighter.
+        if (data.message.action == CmAction.GET_LOCATION && character.name == "dadio"){
+            let locationResponse = {
+                action: CmAction.REQUEST_SUPPLIES,
+                map: character.map,
+                x: character.x,
+                y: character.y
+            }
+            send_cm(merchant_name, locationResponse);
+            Logger.info("Responding to location request");
         }
     });
 }

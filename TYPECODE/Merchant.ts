@@ -37,6 +37,7 @@ export class Merchant {
     private FIGHTERS = this.get_fighters()
     private mpot = G.items.mpot0;
     private hpot = G.items.hpot0;
+    private restock_timer = 0; 
     
 
     constructor(){
@@ -65,18 +66,18 @@ export class Merchant {
     public async merchant_loop(){
         let current_time: number = new Date().getTime() / 1000; //convert to seconds
 
-        if (MERCHANT_INFO.status== MerchantStatus.COLLECTING ){
+        if (MERCHANT_INFO.status == MerchantStatus.COLLECTING ){
             try{
                 await smart_move({ map: last_message.message.map, x: last_message.message.x, y: last_message.message.y });
                 last_collection = new Date().getTime() / 1000; //reset last collection time.
-                MERCHANT_INFO.status= MerchantStatus.BORED
+                MERCHANT_INFO.status = MerchantStatus.BORED
                 Logger.info("Merchant has arrived at destination")
             } catch (e) {
                 Logger.error("error in merchant loop e:" + e)
             }
         }
 
-        if (MERCHANT_INFO.status== MerchantStatus.BORED && !this.at_bored_spot()){
+        if (MERCHANT_INFO.status == MerchantStatus.BORED && !this.at_bored_spot()){
             await smart_move(this.BORED_SPOT)
         }
 
@@ -98,13 +99,20 @@ export class Merchant {
                         await buy(this.hpot.skin, buyAmount);
                     }
                 }
+                // if (locate_item("staff") == -1) await buy("staff", 1)
+                // if (locate_item("blade") == -1) await buy("blade", 1)
+                // if (locate_item("coat") == -1) await buy("coat", 1)
+                // if (locate_item("gloves") == -1) await buy("gloves", 1)
+                if (locate_item("pants") == -1) await buy("pants", 1)
+                if (locate_item("shoes") == -1) await buy("shoes", 1)
+                // if (locate_item("helmet") == -1) await buy("helmet", 1)
             } catch (e) {
                 Logger.error("Error purchasing potions e:")
             }
 
         }
-
-        if (!smart.moving && !smart.searching) {
+        //@ts-ignore
+        if (!smart.moving && !smart.pathing) {
             // if (merchant.status == "banking") {
             //     checked_bank = go_check_bank(); // run check banking  
             // }
@@ -127,20 +135,11 @@ export class Merchant {
 
         }
 
-
-        if (!character.stand && !smart.moving && !smart.searching) {
-            Logger.info("opening stand")
-            parent.open_merchant(locate_item("stand0"));
         //@ts-ignore
-        } else if (character.stand && smart.moving || smart.pathing) {
-            Logger.info("closing stand")
-            parent.close_merchant();
-        }
-
-        if (current_time - last_collection > 900 && !smart.moving && !smart.searching) {
-            // send_cm(fighters[0], { action: "getLocation" }); //send msg to get location to move too. 
-            game_log("need to set up collection")
-            send_cm(this.FIGHTERS[0].name, {action: CmAction.GET_LOCATION})
+        if (current_time - last_collection > this.restock_timer && !smart.moving && !smart.searching) {
+            send_cm("dadio", {action: CmAction.GET_LOCATION})
+            this.restock_timer = 600; 
+            last_collection = new Date().getTime() / 1000
         }
         this.timeouts.set("merchant_loop", setTimeout(() => this.merchant_loop(), 1000));
     }
@@ -162,46 +161,75 @@ export class Merchant {
         } else return false 
     }
 
+    public async stand_loop(){
+        try {
+            //@ts-ignore
+            if (!character.stand && !smart.moving && !smart.pathing) {
+                Logger.info("opening stand")
+                await open_stand(locate_item("stand0"));
+                MERCHANT_INFO.status = MerchantStatus.BORED;
+
+            //@ts-ignore
+            } else if (character.stand != false && (character.moving || smart.moving || smart.pathing)) {
+                game_log(character.stand)
+                Logger.info("closing stand")
+                await close_stand()
+            }
+
+        } catch (e) {
+            Logger.error("standloop")
+            show_json(e)
+        }
+
+        this.timeouts.set("stand_loop", setTimeout(() => this.stand_loop(), 1000));
+    }
+
     //todo: make this async.
     public async sell_loop(){
         let items = character.items;
         let slot: TradeSlotType | null; 
         let openSlotFound: boolean = false;
 
-        if (!character.stand) {
-            this.timeouts.set("sell_loop", setTimeout(() => this.sell_loop(), 10000));
-            return; 
-        }
-
-
-        for(let key in character.slots){
-            slot = <TradeSlotType>key; 
-            if(key.startsWith("trade") && character.slots[slot] == null){
-                openSlotFound = true; 
-                break;
+        try {
+            if (!character.stand) {
+                this.timeouts.set("sell_loop", setTimeout(() => this.sell_loop(), 10000));
+                return;
             }
-        }
 
-        if(!openSlotFound){
-            Logger.warn("No more room to sell items");
-            this.timeouts.set("sell_loop", setTimeout(() => this.sell_loop(), 10000));
-            return;
-        } 
 
-        for (let i = 0; i < items.length; i++) {
-            let item = items[i];
-            if(item == null || item == undefined) continue;
-            if (SellLib.items_to_sell.includes(item.name)){
-                let quantity: number = 1;
-                if (item.q != null && item.q != undefined) quantity = item.q!; 
-                try{
-                    let result = await trade(i, slot!, G.items[item.name].g * 2, quantity)
-                    game_log(result)
-                    this.timeouts.set("sell_loop", setTimeout(() => this.sell_loop(), 100));
-                    return;
-                } catch (e) { Logger.error("sell_loop")}
+            for (let key in character.slots) {
+                slot = <TradeSlotType>key;
+                if (key.startsWith("trade") && character.slots[slot] == null) {
+                    openSlotFound = true;
+                    break;
+                }
             }
+
+            if (!openSlotFound) {
+                Logger.warn("No more room to sell items");
+                this.timeouts.set("sell_loop", setTimeout(() => this.sell_loop(), 10000));
+                return;
+            }
+
+            for (let i = 0; i < items.length; i++) {
+                let item = items[i];
+                if (item == null || item == undefined) continue;
+                if (SellLib.items_to_sell.includes(item.name)) {
+                    let quantity: number = 1;
+                    if (item.q != null && item.q != undefined) quantity = item.q!;
+                    try {
+                        let result = await trade(i, slot!, G.items[item.name].g * 2, quantity)
+                        game_log(result)
+                        this.timeouts.set("sell_loop", setTimeout(() => this.sell_loop(), 100));
+                        return;
+                    } catch (e) { Logger.error("sell_loop") }
+                }
+            }
+        } catch (e) {
+            Logger.error("sell_loop");
+            show_json(e)
         }
+
         this.timeouts.set("sell_loop", setTimeout(() => this.sell_loop(), 10000));
     }
 

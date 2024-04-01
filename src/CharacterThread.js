@@ -252,8 +252,8 @@ async function make_game(proc_args) {
       if(character != null && character.goldCount == undefined) character.goldCount = 0;  
       recentDate = new Date() / 1000;
       if (character != null && recentDate - character.lastPost > 60) {
-          caracAL.log.info({col:"gold", type:"game_logs"}, "goldCount=" + character.goldCount);
-          caracAL.log.info({col:"red", type:"game_logs"}, "killCount=" + character.killCount);
+          caracAL.log.info({col:"gold", type:"gold_count"}, character.goldCount);
+          caracAL.log.info({col:"red", type:"kill_count"}, character.killCount);
           character.lastPost = new Date() / 1000;
           character.goldCount = 0; 
           character.killCount = 0;

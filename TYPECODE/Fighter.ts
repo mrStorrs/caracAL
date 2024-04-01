@@ -67,32 +67,32 @@ export class Fighter {
     }
   }
 
-  //todo: move to targeting
+  //todo: move to targeting/ and make to async
   private send_items_to_merchant(){
-    if (!this.MERCHANT) {
-      this.MERCHANT = this.get_merchant()
-      return;
-    }
+    // if (!this.MERCHANT) {
+    //   this.MERCHANT = this.get_merchant()
+    //   return;
+    // }
 
     let entities = Object.values(parent.entities);
     this.current_time = new Date().getTime() / 1000; 
 
+    //unhardcode name
     for(let entity of entities){
-      if (entity.name == this.MERCHANT.name && distance(character, entity) < 350){
-        Logger.info("you are here sir")
-        game_log(this.last_sent_items)
-        game_log(this.current_time)
-
-        if(this.current_time - this.last_sent_items > 3){
-          this.send_to_merchant(1, this.MERCHANT.name)
-          let mp_to_request = Math.min(3000, 9999 - Util.get_num_items("mpot0"))
-          let hp_to_request = Math.min(3000, 9999 - Util.get_num_items("hpot0"))
-          if(mp_to_request > 100) this.request_from_merchant("mpot0", mp_to_request, this.MERCHANT.name)
-          if(hp_to_request > 100) this.request_from_merchant("hpot0", mp_to_request, this.MERCHANT.name)
-        }
+      if (entity.name == "krissypooh" && distance(character, entity) < 300){
+        // game_log(this.current_time - this.last_sent_items)
+        // if(this.current_time - this.last_sent_items > 1){
+          game_log("wtf")
+          this.send_to_merchant(0, "krissypooh")
+          let mp_to_request = Math.min(3000, (9998 - (Util.get_num_items("mpot0")) + 1))
+          let hp_to_request = Math.min(3000, (9998 - (Util.get_num_items("hpot0")) + 1))
+          if(mp_to_request < 100 || hp_to_request < 100) break;
+          if (mp_to_request > 100) this.request_from_merchant("mpot0", mp_to_request, "krissypooh")
+          if (hp_to_request > 100) this.request_from_merchant("hpot0", mp_to_request, "krissypooh")
+          this.last_sent_items = new Date().getTime() / 1000
+        // }
       }
     }
-    this.last_sent_items = new Date().getTime() / 1000
   }
 
   //todo: move to targeting or util 
@@ -149,7 +149,8 @@ export class Fighter {
           smart_move(target);
         }
       }
-    } else if (!is_moving(character) && !smart.searching) {
+    //@ts-ignore
+    } else if (!is_moving(character) && !smart.pathing) {
       await smart_move(this.target_monsters[0]);
     } 
     this.timeouts.set("fight_loop", setTimeout(() => this.fight_loop(), 100))
