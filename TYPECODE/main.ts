@@ -1,19 +1,22 @@
 import { CodeMessageEvent } from "../node_modules/typed-adventureland/dist/src/codemessage";
-import {Fighter} from "./Fighter"
+import { Fighter } from "./Fighter"
 import { Logger } from "./Logger";
 import { Merchant } from "./Merchant";
-import {Target} from "./Target"
+import { Target } from "./Target"
 import { CmAction } from "./enums/CmAction";
+import { PARTY } from "./lib/GlobalLib";
 
 const TARGETS: string[] = ["bee"]
 let bot: Fighter = new Fighter(TARGETS);
 let bot_merchant: Merchant = new Merchant(); 
 let merchant_name: string = "krissypooh";
+let target_finder: Target = new Target(TARGETS); 
 
 // test.test_loop()
 if(character.ctype != "merchant"){
     bot.fight_loop()
     bot.combat_loop()
+    target_finder.target_loop();
     // respawn_loop()
 } else {
     bot_merchant.merchant_loop();
@@ -39,7 +42,8 @@ if (character.ctype != "merchant"){
 
         //todo: these should be enums
         if (data.message.action == "update_target") {
-            bot.party_targets.set(data.name, data.message.message);
+            PARTY.currentTargets.set(data.name, data.message.message)
+            // bot.party_targets.set(data.name, data.message.message);
         }
 
         //todo: there needs to be a better way to do this. mayeb using globals for each fighter.

@@ -100,12 +100,12 @@ export class Merchant {
                     }
                 }
                 // if (locate_item("staff") == -1) await buy("staff", 1)
-                // if (locate_item("blade") == -1) await buy("blade", 1)
-                // if (locate_item("coat") == -1) await buy("coat", 1)
-                // if (locate_item("gloves") == -1) await buy("gloves", 1)
+                if (locate_item("blade") == -1) await buy("blade", 1)
+                if (locate_item("coat") == -1) await buy("coat", 1)
+                if (locate_item("gloves") == -1) await buy("gloves", 1)
                 if (locate_item("pants") == -1) await buy("pants", 1)
                 if (locate_item("shoes") == -1) await buy("shoes", 1)
-                // if (locate_item("helmet") == -1) await buy("helmet", 1)
+                if (locate_item("helmet") == -1) await buy("helmet", 1)
             } catch (e) {
                 Logger.error("Error purchasing potions e:")
             }

@@ -6,6 +6,7 @@ import { Logger } from "./Logger";
 import { Target } from "./Target"
 import { Util } from "./Util";
 import { CmAction } from "./enums/CmAction";
+import { PARTY } from "./lib/GlobalLib";
 
 export class Fighter {
   private target_monsters: string[];
@@ -17,6 +18,7 @@ export class Fighter {
   private MERCHANT = this.get_merchant()
   private last_sent_items = new Date().getTime() / 1000; 
   private ITEMS_TO_KEEP: string[] = ["mpot0", "hpot0"]
+  
 
   constructor(target_monsters: string[]){
     this.target_monsters = target_monsters;
@@ -127,17 +129,12 @@ export class Fighter {
     this.send_items_to_merchant(); 
     loot();
 
-    // const target = get_nearest_monster({ type: this.mon_type });
-    // if(!target){
-    let target = this.targetFinder.get_target(this.party_targets)
+    let target;
+    if(character.target != null){
+      target = parent.entities[character.target]
+    } 
 
     if (target) {
-      if(target.id != character.target){
-        Fighter.update_party_target(target.id)
-        change_target(target);
-      }
-
-
       const dist = simple_distance(target, character);
       if (!is_moving(character) && dist > character.range - 10) {
         if (can_move_to(target.real_x, target.real_y)) {
@@ -150,8 +147,6 @@ export class Fighter {
         }
       }
     //@ts-ignore
-    } else if (!is_moving(character) && !smart.pathing) {
-      await smart_move(this.target_monsters[0]);
     } 
     this.timeouts.set("fight_loop", setTimeout(() => this.fight_loop(), 100))
   }
@@ -162,8 +157,8 @@ export class Fighter {
     try {
       if (character.target != null && can_attack(parent.entities[character.target])) {
         await attack(parent.entities[character.target])
-      } else if (character.target != null && Array.from(this.party_targets.values()).includes(character.target)) {
-        this.targetFinder.get_target(this.party_targets)
+      } else if (character.target != null && Array.from(PARTY.currentTargets.values()).includes(character.target)) {
+        this.targetFinder.get_target(PARTY.currentTargets)
         // console.log("cannot attack")
         // if(!is_targeted(player.target)){
         // reduce_cooldown("attack", Math.min(...parent.pings))
@@ -185,20 +180,6 @@ export class Fighter {
     if (next_skill == undefined) return 0
     const ms = next_skill.getTime() - Date.now()
     return ms < 0 ? 0 : ms
-  }
-
-  public static update_party_target(target_id: string){
-    if (parent.party_list.length > 1) {
-      for (let partyMember of parent.party_list) {
-        if (partyMember != character.name){
-          let data = {
-            "action": "update_target",
-            "message": target_id
-          }
-          send_cm(partyMember, data)
-        }
-      }
-    }
   }
 
   private  request_supplies(){
