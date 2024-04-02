@@ -8,3 +8,7 @@ export var PARTY  = {
     currentTargets: new Map<string,string>()
 }
 
+export var BOT = {
+    status: MerchantStatus.BORED.toString()
+}
+

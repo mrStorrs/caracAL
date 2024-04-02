@@ -18,6 +18,7 @@ export class Fighter {
   private MERCHANT = this.get_merchant()
   private last_sent_items = new Date().getTime() / 1000; 
   private ITEMS_TO_KEEP: string[] = ["mpot0", "hpot0"]
+  private util: Util = new Util; 
   
 
   constructor(target_monsters: string[]){
@@ -83,16 +84,15 @@ export class Fighter {
     for(let entity of entities){
       if (entity.name == "krissypooh" && distance(character, entity) < 300){
         // game_log(this.current_time - this.last_sent_items)
-        // if(this.current_time - this.last_sent_items > 1){
-          game_log("wtf")
+        if(this.current_time - this.last_sent_items > 3){
           this.send_to_merchant(0, "krissypooh")
-          let mp_to_request = Math.min(3000, (9998 - (Util.get_num_items("mpot0")) + 1))
-          let hp_to_request = Math.min(3000, (9998 - (Util.get_num_items("hpot0")) + 1))
+          let mp_to_request = Math.min(3000, (3000 - (Util.get_num_items("mpot0")) + 1))
+          let hp_to_request = Math.min(3000, (3000 - (Util.get_num_items("hpot0")) + 1))
           if(mp_to_request < 100 || hp_to_request < 100) break;
           if (mp_to_request > 100) this.request_from_merchant("mpot0", mp_to_request, "krissypooh")
           if (hp_to_request > 100) this.request_from_merchant("hpot0", mp_to_request, "krissypooh")
           this.last_sent_items = new Date().getTime() / 1000
-        // }
+        }
       }
     }
   }
@@ -103,6 +103,7 @@ export class Fighter {
     for (let i = index; i <= character.isize; i++) {
       if (character.items[i] != null && !this.ITEMS_TO_KEEP.includes(character.items[i].name)) { //make sure slot is not empty.
         send_item(merchant_name, i, 999);
+        set_message("test")
       }
     }
   }
@@ -196,7 +197,7 @@ export class Fighter {
         x: character.x,
         y: character.y
       }
-      send_cm(this.MERCHANT.name, locationResponse);
+      send_cm("krissypooh", locationResponse);
       Logger.info("requesting supplies");
       this.last_collection = new Date().getTime() / 1000;
     }

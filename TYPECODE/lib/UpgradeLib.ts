@@ -6,7 +6,7 @@ export class UpgradeLib{
     public static items_to_upgrade: ItemsToUpgrade = {
         // "wshoes": [8, 2],
         // "wcap": [8, 2],
-        // "cclaw": [8, 2],
+        "cclaw": [7, 2],
         // "wgloves": [8, 2],
         // "wbreeches": [8, 2],
         // "mushroomstaff": [8, 2],
@@ -17,7 +17,8 @@ export class UpgradeLib{
         // "gphelmet": [7, 2],
         "blade": [7, 1],
         "bow": [7, 1],
-        // "stinger": [8, 2],
+        "mace": [7, 1],
+        "stinger": [7, 2],
         // "glolipop": [8, 2],
         // "slimestaff": [8, 2],
         // "firestaff": [7, 3],

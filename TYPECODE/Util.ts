@@ -1,4 +1,5 @@
 import { Logger } from "./Logger";
+import { BOT } from "./lib/GlobalLib";
 
 export class Util {
     public static get_num_items(item: string): number {
@@ -17,6 +18,12 @@ export class Util {
             return false
         }
         else return true
+    }
+
+    public static set_status(statusMessage: string){
+        set_message(statusMessage);
+        BOT.status = statusMessage;
+
     }
 }
 

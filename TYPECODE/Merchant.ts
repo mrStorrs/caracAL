@@ -6,7 +6,7 @@ import { Upgrade } from "./Upgrade";
 import { Util } from "./Util";
 import { CmAction } from "./enums/CmAction";
 import { MerchantStatus } from "./enums/MerchantStatus";
-import { MERCHANT_INFO } from "./lib/GlobalLib";
+import { BOT, MERCHANT_INFO } from "./lib/GlobalLib";
 import { SellLib } from "./lib/SellLib";
 
 
@@ -14,9 +14,9 @@ import { SellLib } from "./lib/SellLib";
 //     if (fighters.includes(data.name)) {
 //         //send back the amount of gold currently held
 //         if (data.message.action == "sendLocation") {
-//             if (merchant.MERCHANT_INFO.status!= "collecting" && merchant.MERCHANT_INFO.status!= "compounding" && character.esize > 4) {
+//             if (merchant.BOT.status!= "collecting" && merchant.BOT.status!= "compounding" && character.esize > 4) {
 //                 set_message("collecting");
-//                 merchant.MERCHANT_INFO.status= "collecting"
+//                 merchant.BOT.status= "collecting"
 //                 // set_merchant(merchant);
 //                 game_log("error msg here");
 //                 smart_move({ map: data.message.map, x: data.message.x, y: data.message.y });
@@ -29,7 +29,7 @@ import { SellLib } from "./lib/SellLib";
 
 
 let last_collection: number = new Date().getTime() / 1000; 
-let last_message: CodeMessageEvent<any>; 
+let last_message: CodeMessageEvent<any> | null; 
 
 export class Merchant {
     private BORED_SPOT = { map: "main", x: -107, y: -50 };
@@ -43,10 +43,10 @@ export class Merchant {
     constructor(){
         character.on("cm", function (data: CodeMessageEvent<any>) {
             if (data.message.action == CmAction.REQUEST_SUPPLIES) {
-                if (MERCHANT_INFO.status != MerchantStatus.COLLECTING && character.esize > 4) {
-                    set_message(MerchantStatus.COLLECTING);
-                    MERCHANT_INFO.status = MerchantStatus.COLLECTING
-                    last_message = data
+                if (character.esize > 4) {
+                    Util.set_status(MerchantStatus.COLLECTING)
+                    last_message = data;
+                    game_log(last_message)
                     // smart_move({ map: data.message.map, x: data.message.x, y: data.message.y });
                     // last_collection = new Date().getTime() / 1000; //reset last collection time.
                 }
@@ -66,18 +66,20 @@ export class Merchant {
     public async merchant_loop(){
         let current_time: number = new Date().getTime() / 1000; //convert to seconds
 
-        if (MERCHANT_INFO.status == MerchantStatus.COLLECTING ){
+        if (BOT.status == MerchantStatus.COLLECTING && last_message != null){
             try{
                 await smart_move({ map: last_message.message.map, x: last_message.message.x, y: last_message.message.y });
                 last_collection = new Date().getTime() / 1000; //reset last collection time.
-                MERCHANT_INFO.status = MerchantStatus.BORED
                 Logger.info("Merchant has arrived at destination")
             } catch (e) {
                 Logger.error("error in merchant loop e:" + e)
+            } finally {
+                Util.set_status(MerchantStatus.BORED)
+                last_message = null; 
             }
         }
 
-        if (MERCHANT_INFO.status == MerchantStatus.BORED && !this.at_bored_spot()){
+        if (BOT.status == MerchantStatus.BORED && !this.at_bored_spot()){
             await smart_move(this.BORED_SPOT)
         }
 
@@ -100,7 +102,8 @@ export class Merchant {
                     }
                 }
                 // if (locate_item("staff") == -1) await buy("staff", 1)
-                if (locate_item("blade") == -1) await buy("blade", 1)
+                if (locate_item("bow") == -1) await buy("bow", 1)
+                // if (locate_item("mace") == -1) await buy("bow", 1)
                 if (locate_item("coat") == -1) await buy("coat", 1)
                 if (locate_item("gloves") == -1) await buy("gloves", 1)
                 if (locate_item("pants") == -1) await buy("pants", 1)
@@ -119,7 +122,7 @@ export class Merchant {
             // if (character.q.compound == undefined && merchant.status != "upgrading" && merchant.status != "banking") {
             //     go_compound();
             // }
-            if (character.q.upgrade == undefined && MERCHANT_INFO.status == MerchantStatus.BORED) {
+            if (character.q.upgrade == undefined && BOT.status == MerchantStatus.BORED) {
                 Upgrade.go_upgrade();
             }
 
@@ -138,6 +141,7 @@ export class Merchant {
         //@ts-ignore
         if (current_time - last_collection > this.restock_timer && !smart.moving && !smart.searching) {
             send_cm("dadio", {action: CmAction.GET_LOCATION})
+            Util.set_status(MerchantStatus.COLLECTING)
             this.restock_timer = 600; 
             last_collection = new Date().getTime() / 1000
         }
@@ -167,7 +171,7 @@ export class Merchant {
             if (!character.stand && !smart.moving && !smart.pathing) {
                 Logger.info("opening stand")
                 await open_stand(locate_item("stand0"));
-                MERCHANT_INFO.status = MerchantStatus.BORED;
+                Util.set_status(MerchantStatus.BORED)
 
             //@ts-ignore
             } else if (character.stand != false && (character.moving || smart.moving || smart.pathing)) {

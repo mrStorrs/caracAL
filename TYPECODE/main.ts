@@ -3,14 +3,23 @@ import { Fighter } from "./Fighter"
 import { Logger } from "./Logger";
 import { Merchant } from "./Merchant";
 import { Target } from "./Target"
+import { Util } from "./Util";
 import { CmAction } from "./enums/CmAction";
+import { MerchantStatus } from "./enums/MerchantStatus";
 import { PARTY } from "./lib/GlobalLib";
 
-const TARGETS: string[] = ["bee"]
+let TARGETS: string[] = ["crab"]
+if (character.name == "evie") TARGETS = ["bee"]
+if (character.name == "harn") TARGETS = ["bee"]
+if (character.name == "alister") TARGETS = ["bee"]
+if (character.name == "vess") TARGETS = ["bee"]
+
 let bot: Fighter = new Fighter(TARGETS);
 let bot_merchant: Merchant = new Merchant(); 
 let merchant_name: string = "krissypooh";
 let target_finder: Target = new Target(TARGETS); 
+
+
 
 // test.test_loop()
 if(character.ctype != "merchant"){
@@ -19,6 +28,7 @@ if(character.ctype != "merchant"){
     target_finder.target_loop();
     // respawn_loop()
 } else {
+    // set_message("bored");
     bot_merchant.merchant_loop();
     bot_merchant.sell_loop();
     bot_merchant.stand_loop();

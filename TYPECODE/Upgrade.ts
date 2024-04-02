@@ -98,7 +98,7 @@ export class Upgrade {
                     if (items[i].p == undefined) {
                         var upgrading = true;
                         set_message("upgrading")
-                        MERCHANT_INFO.status = MerchantStatus.UPGRADING;
+                        Util.set_status(MerchantStatus.UPGRADING)
                         //call upgrade item function
                         this.upgrade_item(i, items[i].level!,
                             items_to_upgrade[items[i].name][1], items[i].name); //upgrade
@@ -109,10 +109,10 @@ export class Upgrade {
             // if (upgrading) {
             //     // game_log("upgrading")
             //     set_message("upgrading");
-            //     MERCHANT_INFO.status = MerchantStatus.UPGRADING
+            //     BOT.status = MerchantStatus.UPGRADING
             // } else {
             //     set_message("bored!");
-            //     MERCHANT_INFO.status = MerchantStatus.BORED
+            //     BOT.status = MerchantStatus.BORED
             // }
         } catch (e){
             Logger.error("go_upgrade")
@@ -125,7 +125,7 @@ export class Upgrade {
         try {
             if(itemIndex < 0 || scrollIndex < 0){
                 // Logger.warn("no item or scrolls aborting upgrade")
-                MERCHANT_INFO.status = MerchantStatus.BORED
+                Util.set_status(MerchantStatus.BORED)
                 return;
             }
             const resultChance = await upgrade(itemIndex, scrollIndex, null, true); //getting the chance hence the true at the end
@@ -139,9 +139,9 @@ export class Upgrade {
                 + " upgradeChance=" + resultChance.chance
                 //@ts-ignore
                 + " upgradeScroll=" + resultChance.scroll)
-            MERCHANT_INFO.status = MerchantStatus.BORED
+            Util.set_status(MerchantStatus.BORED)
         } catch (e) {
-            MERCHANT_INFO.status = MerchantStatus.BORED
+            Util.set_status(MerchantStatus.BORED)
             game_log("error=this.getUpgradeChance")
             game_log(show_json(e))
         }
